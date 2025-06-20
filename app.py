@@ -197,6 +197,9 @@ def webhook():
 
         # If user sends plain code
         elif text:
+            if not text.startswith("/run"):
+                send_message(chat_id, "Unknown command!")
+                return "ok"
             if not is_safe_code(text):
                 send_message(chat_id, "⚠️ Code contains forbidden functions/libraries.")
                 return "ok"
