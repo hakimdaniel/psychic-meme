@@ -123,6 +123,7 @@ policy = (
 
 def save_log(chat_id, username, ip):
     filename = "test/access.log"
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(filename, "a") as f:
         f.write(f"[{now}] ip: {ip}, chat_id: {chat_id}, username: {username}\n")
@@ -214,9 +215,13 @@ def webhook():
     return "ok"
 
 @app.route('/file/<path:filename>')
-def save_log(chat_id, username, ip):
-    filename = "test/access.log"
-    os.makedirs(os.path.dirname(filename), exist_ok=True)  # Buat folder jika belum ada
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with open(filename, "a") as f:
-        f.write(f"[{now}] ip: {ip}, chat_id: {chat_id}, username: {username}\n")
+def baca_fail(filename):
+    path = os.path.join('files', filename)
+
+    if not os.path.isfile(path):
+        return "Fail tidak dijumpai", 404
+
+    with open(path, 'r') as f:
+        isi = f.read()
+
+    return f"<pre>{isi}</pre>"
