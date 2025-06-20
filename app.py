@@ -9,18 +9,21 @@ app = Flask(__name__)
 BOT_TOKEN = os.getenv("BOT_TOKEN") or "PASTE_TOKEN_HERE"
 BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
-# Simpan sesi user: {chat_id: {'code': ..., 'state': 'wait_input', 'var': ...}}
 sessions = {}
 
 # ==========================
 #  UTILITY FUNCTIONS
 # ==========================
 
-def send_message(chat_id, text):
-    requests.post(f"{BASE_URL}/sendMessage", json={
+def send_message(chat_id, text, thread_id=None):
+    payload = {
         "chat_id": chat_id,
         "text": text,
-    })
+        "parse_mode":"Markdown"
+    }
+    if thread_id:
+        payload["message_thread_id"] = thread_id
+    requests.post(f"{BASE_URL}/sendMessage", json=payload)
 
 def extract_input_prompt(code):
     pattern = r'\b(\w+)\s*=\s*input\s*\(\s*(?:([\'"])(.*?)\2)?\s*\)'
@@ -60,13 +63,13 @@ def replace_input(code, var_name, user_value):
             new_lines.append(line)
     return "\n".join(new_lines)
 
+import re
+
 def is_safe_code(code):
     forbidden_patterns = [
-        r'\bimport\s+os\b',
-        r'\bimport\s+subprocess\b',
-        r'\bimport\s+sys\b',
-        r'\bimport\s+shutil\b',
-        r'importlib',
+        # 🚫 Import libraries berbahaya
+        r'\bimport\s+(os|sys|subprocess|shutil|requests|http|urllib|ftplib|socket|pickle|threading|asyncio|platform|psutil|importlib|multiprocessing|flask)\b',
+        r'\bfrom\s+(os|sys|subprocess|shutil|requests|http|urllib|ftplib|socket|pickle|threading|asyncio|platform|psutil|importlib|multiprocessing|flask)\b',
         r'__\w+__',
         r'\beval\s*\(',
         r'\bexec\s*\(',
@@ -118,8 +121,6 @@ policy = (
     "\n\nTip: [shift]+[enter] to go to a newline without send a message."
 )
 
-# Setup logging
-
 def save_log(chat_id, username, ip):
     filename = "access.log"
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -134,30 +135,30 @@ def save_log(chat_id, username, ip):
 def webhook():
     data = request.json
     if "message" in data:
-        chat_id = data["message"]["chat"]["id"]
-        text = data["message"].get("text", "").strip()
-        user_info = data["message"].get("from", {})
-        username = user_info.get("username", "unknown")
+        message = data["message"]
+        chat_id = message["chat"]["id"]
+        text = message.get("text", "").strip()
+        thread_id = message.get("message_thread_id")  # <== Tambah ini
+        username = message.get("from", {}).get("username", "unknown")
         ip = request.headers.get("X-Forwarded-For", request.remote_addr)
-        save_log(chat_id, username,ip)
-        # Handle commands
+        save_log(chat_id, username, ip)
+
         if text == "/start":
-            send_message(chat_id, "Welcome 🥳\nPlease read /policy before using this bot.")
+            send_message(chat_id, "Welcome 🥳\nPlease read /policy before using this bot.", thread_id)
         elif text == "/about":
-            send_message(chat_id, "Hi! I'm Bot Ak1m, created by **Daniel Hakim**.\nContact @d4n13lh4k1m for feedback or issues.")
+            send_message(chat_id, "Hi! I'm Bot Ak1m, created by **Daniel Hakim**.\nContact @d4n13lh4k1m for feedback or issues.", thread_id)
         elif text == "/help":
-            send_message(chat_id, "Send Python code starting with /run or directly.\nSupports input() and basic Python features.")
+            send_message(chat_id, "Send Python code starting with /run or directly.\nSupports input() and basic Python features.", thread_id)
         elif text == "/policy":
-            send_message(chat_id, policy)
+            send_message(chat_id, policy, thread_id)
         elif text == "/cancel":
             if chat_id in sessions:
                 sessions.pop(chat_id)
-                send_message(chat_id, "✅ Session cancelled.")
+                send_message(chat_id, "✅ Session cancelled.", thread_id)
             else:
-                send_message(chat_id, "No active session to cancel.")
+                send_message(chat_id, "No active session to cancel.", thread_id)
             return "ok"
 
-        # If user is replying input()
         elif chat_id in sessions and sessions[chat_id].get('state') == 'wait_input':
             session = sessions[chat_id]
             var = session['var']
@@ -166,50 +167,48 @@ def webhook():
             next_var, next_prompt = extract_input_prompt(code)
             if next_var:
                 sessions[chat_id] = {'code': code, 'state': 'wait_input', 'var': next_var}
-                send_message(chat_id, next_prompt)
+                send_message(chat_id, next_prompt, thread_id)
             else:
                 if not is_safe_code(code):
-                    send_message(chat_id, "⚠️ Final code contains unsafe functions.")
+                    send_message(chat_id, "⚠️ Final code contains unsafe functions.", thread_id)
                     sessions.pop(chat_id)
                     return "ok"
                 output = run_code(code)
-                send_message(chat_id, f"Output:\n{output}")
+                send_message(chat_id, f"Output:\n{output}", thread_id)
                 sessions.pop(chat_id)
             return "ok"
 
-        # If user sends code with /run
         elif text.startswith("/run"):
             code = text.partition("/run")[2].strip()
             if not code:
-                send_message(chat_id, "❗ Please provide code after /run.")
+                send_message(chat_id, "❗ Please provide code after /run.", thread_id)
                 return "ok"
             if not is_safe_code(code):
-                send_message(chat_id, "⚠️ Code contains forbidden functions/libraries.")
+                send_message(chat_id, "⚠️ Code contains forbidden functions/libraries.", thread_id)
                 return "ok"
             var, prompt = extract_input_prompt(code)
             if var:
                 sessions[chat_id] = {'code': code, 'state': 'wait_input', 'var': var}
-                send_message(chat_id, prompt)
+                send_message(chat_id, prompt, thread_id)
             else:
-                output = run_code(code)
-                send_message(chat_id, f"Output:\n{output}")
+                output = "```\n"+run_code(code)+"```"
+                send_message(chat_id, f"Output:\n{output}", thread_id)
             return "ok"
 
-        # If user sends plain code
         elif text:
             if not text.startswith("/run"):
-                send_message(chat_id, "Unknown command!")
+                send_message(chat_id, "Unknown command!", thread_id)
                 return "ok"
             if not is_safe_code(text):
-                send_message(chat_id, "⚠️ Code contains forbidden functions/libraries.")
+                send_message(chat_id, "⚠️ Code contains forbidden functions/libraries.", thread_id)
                 return "ok"
             var, prompt = extract_input_prompt(text)
             if var:
                 sessions[chat_id] = {'code': text, 'state': 'wait_input', 'var': var}
-                send_message(chat_id, prompt)
+                send_message(chat_id, prompt, thread_id)
             else:
                 output = run_code(text)
-                send_message(chat_id, f"Output:\n{output}")
+                send_message(chat_id, f"Output:\n{output}", thread_id)
             return "ok"
 
     return "ok"
