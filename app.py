@@ -213,7 +213,7 @@ def webhook():
 
     return "ok"
 
-    @app.route('/file/<path:filename>')
+@app.route('/file/<path:filename>')
 def baca_fail(filename):
     path = os.path.join('test', filename)
 
