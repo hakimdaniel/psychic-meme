@@ -216,7 +216,7 @@ def webhook():
 
 @app.route('/file/<path:filename>')
 def baca_fail(filename):
-    path = os.path.join('files', filename)
+    path = os.path.join('file', filename)
 
     if not os.path.isfile(path):
         return "Fail tidak dijumpai", 404
