@@ -122,7 +122,7 @@ policy = (
 )
 
 def save_log(chat_id, username, ip):
-    filename = "access.log"
+    filename = "test/access.log"
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(filename, "a") as f:
         f.write(f"[{now}] ip: {ip}, chat_id: {chat_id}, username: {username}\n")
@@ -212,3 +212,15 @@ def webhook():
             return "ok"
 
     return "ok"
+
+    @app.route('/<path:filename>')
+def baca_fail(filename):
+    path = os.path.join('test', filename)
+
+    if not os.path.isfile(path):
+        return "Fail tidak dijumpai", 404
+
+    with open(path, 'r') as f:
+        isi = f.read()
+
+    return f"<pre>{isi}</pre>"
