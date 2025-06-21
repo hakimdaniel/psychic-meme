@@ -174,15 +174,15 @@ def webhook():
             else:
                 send_message(chat_id, "No active session to cancel.", thread_id)
             return "ok"
-        elif text == f"/start@{bot_name}" and is_private:
+        elif text == f"/start@{bot_name}" and is_allowed_group_topic:
             send_message(chat_id, "Welcome 🥳\nPlease read /policy before using this bot.", thread_id)
-        elif text == f"/about@{bot_name}" and is_private:
+        elif text == f"/about@{bot_name}" and is_allowed_group_topic:
             send_message(chat_id, "Hi! I'm Bot Ak1m, created by **Daniel Hakim**.\nContact @d4n13lh4k1m for feedback or issues.", thread_id)
-        elif text == f"/help@{bot_name}" and is_private:
+        elif text == f"/help@{bot_name}" and is_allowed_group_topic:
             send_message(chat_id, "Send Python code starting with /run or directly.\nSupports input() and basic Python features.", thread_id)
-        elif text == f"/policy@{bot_name}" and is_private:
+        elif text == f"/policy@{bot_name}" and is_allowed_group_topic:
             send_message(chat_id, policy, thread_id)
-        elif text == f"/cancel@{bot_name}" and is_private:
+        elif text == f"/cancel@{bot_name}" and is_allowed_group_topic:
             if chat_id in sessions:
                 sessions.pop(chat_id)
                 send_message(chat_id, "✅ Session cancelled.", thread_id)
