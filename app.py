@@ -138,8 +138,18 @@ def webhook():
     if "message" in data:
         message = data["message"]
         chat_id = message["chat"]["id"]
+        thread_id = message.get("message_thread_id")  # ✅ Ambil topic ID
+        chat_type = message["chat"]["type"]
+
+        # ✅ Hanya benarkan mesej dari PM atau group + topic ID tertentu
+        is_private = chat_type == "private"
+        is_allowed_group_topic = chat_id == 2391643285 and thread_id == 33
+
+        if not (is_private or is_allowed_group_topic):
+            return "Not allowed", 200  # ❌ Abaikan jika tak valid
+
+        # ✅ Teruskan proses jika valid
         text = message.get("text", "").strip()
-        thread_id = message.get("message_thread_id")  # <== Tambah ini
         username = message.get("from", {}).get("username", "unknown")
         ip = request.headers.get("X-Forwarded-For", request.remote_addr)
         save_log(chat_id, username, ip)
@@ -192,7 +202,7 @@ def webhook():
                 sessions[chat_id] = {'code': code, 'state': 'wait_input', 'var': var}
                 send_message(chat_id, prompt, thread_id)
             else:
-                output = "```\n"+run_code(code)+"```"
+                output = "```\n" + run_code(code) + "```"
                 send_message(chat_id, f"Output:\n{output}", thread_id)
             return "ok"
 
