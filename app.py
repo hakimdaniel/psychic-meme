@@ -148,7 +148,7 @@ def webhook():
 
         # ✅ Hanya benarkan jika PM atau topic group tertentu
         is_private = chat_type == "private"
-        is_allowed_group_topic = chat_id == 2391643285 and thread_id == 33
+        is_allowed_group_topic = chat_id == -1002391643285 and thread_id == 33
 
         if not (is_private or is_allowed_group_topic):
             return "Not allowed", 200
