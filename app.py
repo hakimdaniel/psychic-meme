@@ -138,17 +138,22 @@ def webhook():
     if "message" in data:
         message = data["message"]
         chat_id = message["chat"]["id"]
-        thread_id = message.get("message_thread_id")  # ✅ Ambil topic ID
+        thread_id = message.get("message_thread_id")  # topic ID jika ada
         chat_type = message["chat"]["type"]
 
-        # ✅ Hanya benarkan mesej dari PM atau group + topic ID tertentu
+        # ✅ Debug: semak ID mesej yang masuk
+        print("DEBUG >> chat_id:", chat_id)
+        print("DEBUG >> thread_id:", thread_id)
+        print("DEBUG >> chat_type:", chat_type)
+
+        # ✅ Hanya benarkan jika PM atau topic group tertentu
         is_private = chat_type == "private"
         is_allowed_group_topic = chat_id == 2391643285 and thread_id == 33
 
         if not (is_private or is_allowed_group_topic):
-            return "Not allowed", 200  # ❌ Abaikan jika tak valid
+            return "Not allowed", 200
 
-        # ✅ Teruskan proses jika valid
+        # ✅ Teruskan proses
         text = message.get("text", "").strip()
         username = message.get("from", {}).get("username", "unknown")
         ip = request.headers.get("X-Forwarded-For", request.remote_addr)
@@ -223,6 +228,7 @@ def webhook():
             return "ok"
 
     return "ok"
+
 
 @app.route('/file/<path:filename>')
 def baca_fail(filename):
