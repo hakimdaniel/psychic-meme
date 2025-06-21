@@ -131,7 +131,7 @@ def save_log(chat_id, username, ip):
 # ==========================
 #  MAIN ROUTE
 # ==========================
-
+bot_name = "ak1mpr0bot"
 @app.route("/", methods=["POST"])
 def webhook():
     data = request.json
@@ -159,22 +159,36 @@ def webhook():
         ip = request.headers.get("X-Forwarded-For", request.remote_addr)
         save_log(chat_id, username, ip)
 
-        if text == "/start":
+        if text == "/start" and is_private:
             send_message(chat_id, "Welcome 🥳\nPlease read /policy before using this bot.", thread_id)
-        elif text == "/about":
+        elif text == "/about" and is_private:
             send_message(chat_id, "Hi! I'm Bot Ak1m, created by **Daniel Hakim**.\nContact @d4n13lh4k1m for feedback or issues.", thread_id)
-        elif text == "/help":
+        elif text == "/help" and is_private:
             send_message(chat_id, "Send Python code starting with /run or directly.\nSupports input() and basic Python features.", thread_id)
-        elif text == "/policy":
+        elif text == "/policy" and is_private:
             send_message(chat_id, policy, thread_id)
-        elif text == "/cancel":
+        elif text == "/cancel" and is_private:
             if chat_id in sessions:
                 sessions.pop(chat_id)
                 send_message(chat_id, "✅ Session cancelled.", thread_id)
             else:
                 send_message(chat_id, "No active session to cancel.", thread_id)
             return "ok"
-
+        elif text == f"/start@{bot_name}" and is_private:
+            send_message(chat_id, "Welcome 🥳\nPlease read /policy before using this bot.", thread_id)
+        elif text == f"/about@{bot_name}" and is_private:
+            send_message(chat_id, "Hi! I'm Bot Ak1m, created by **Daniel Hakim**.\nContact @d4n13lh4k1m for feedback or issues.", thread_id)
+        elif text == f"/help@{bot_name}" and is_private:
+            send_message(chat_id, "Send Python code starting with /run or directly.\nSupports input() and basic Python features.", thread_id)
+        elif text == f"/policy@{bot_name}" and is_private:
+            send_message(chat_id, policy, thread_id)
+        elif text == f"/cancel@{bot_name}" and is_private:
+            if chat_id in sessions:
+                sessions.pop(chat_id)
+                send_message(chat_id, "✅ Session cancelled.", thread_id)
+            else:
+                send_message(chat_id, "No active session to cancel.", thread_id)
+            return "ok"
         elif chat_id in sessions and sessions[chat_id].get('state') == 'wait_input':
             session = sessions[chat_id]
             var = session['var']
