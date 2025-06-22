@@ -225,22 +225,7 @@ def webhook():
                 send_message(chat_id, f"Output:\n{output}", thread_id)
             return "ok"
 
-        elif text:
-            if not text.startswith("/run"):
-                send_message(chat_id, "Unknown command!", thread_id)
-                return "ok"
-            if not is_safe_code(text):
-                send_message(chat_id, "⚠️ Code contains forbidden functions/libraries.", thread_id)
-                return "ok"
-            var, prompt = extract_input_prompt(text)
-            if var:
-                sessions[chat_id] = {'code': text, 'state': 'wait_input', 'var': var}
-                send_message(chat_id, prompt, thread_id)
-            else:
-                output = run_code(text)
-                send_message(chat_id, f"Output:\n{output}", thread_id)
-            return "ok"
-
+        
     return "ok"
 
 
